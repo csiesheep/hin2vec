@@ -1,17 +1,3 @@
-//  Copyright 2013 Google Inc. All Rights Reserved.
-//
-//  Licensed under the Apache License, Version 2.0 (the "License");
-//  you may not use this file except in compliance with the License.
-//  You may obtain a copy of the License at
-//
-//      http://www.apache.org/licenses/LICENSE-2.0
-//
-//  Unless required by applicable law or agreed to in writing, software
-//  distributed under the License is distributed on an "AS IS" BASIS,
-//  WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
-//  See the License for the specific language governing permissions and
-//  limitations under the License.
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -246,19 +232,6 @@ void DestroyVocab() {
   }
   free(vocab[vocab_size].word);
   free(vocab);
-
-  //TODO free mp_vocab
-//for (a = 0; a < mp_vocab_size; a++) {
-//  if (mp_vocab[a].mp!= NULL) {
-//    free(mp_vocab[a].mp);
-//  }
-//  if (mp_vocab[a].code != NULL) {
-//    free(mp_vocab[a].code);
-//  }
-//  if (mp_vocab[a].point != NULL) {
-//    free(mp_vocab[a].point);
-//  }
-//}
   free(mp_vocab);
 }
 
@@ -420,17 +393,6 @@ void InitNet() {
 }
 
 void DestroyNet() {
-//if (syn0 != NULL) {
-//  free(syn0);
-//}
-//if (syn1neg != NULL) {
-//  free(syn1neg);
-//}
-  //TODO free synmp
-//printf("synmp\n");
-//if (synmp != NULL) {
-//  free(synmp);
-//}
 }
 
 void *TrainModelThread(void *id) {
@@ -490,10 +452,6 @@ void *TrainModelThread(void *id) {
 
       }
       if (rw_length <= 2) {rw_length = 0; node_length = 0; edge_length = 0; continue;}
-//    for (a = 0; a < rw_length; a++) {
-//      printf("%s ", rw[a]);
-//    }
-//    printf("\n");
         
       // split random walk to node and edge sequence
       is_node = 1;
@@ -515,16 +473,6 @@ void *TrainModelThread(void *id) {
           is_node = 1;
         }
       }
-//    printf("node_seq %d:", node_length);
-//    for (a = 0; a < node_length; a++) {
-//      printf("%d ", node_seq[a]);
-//    }
-//    printf("\n");
-//    printf("edge_seq %d:", edge_length);
-//    for (a = 0; a < edge_length; a++) {
-//      printf("%s ", edge_seq[a]);
-//    }
-//    printf("\n");
 
       rw_length = 0;
     }
@@ -557,7 +505,6 @@ void *TrainModelThread(void *id) {
         for (b=1; b<w; b++) {strcat(mp, edge_seq[a+b]);}
 
         mp_index = SearchMpVocab(mp);
-//      printf("i=%d from %d to %d by mp%s(mp_id=%d) w=%d\n", a, target, context, mp, mp_index, w);
 
         next_random = next_random * (unsigned long long)25214903917 + 11;
         for (d = 0; d < negative + 1; d++) {
@@ -571,7 +518,6 @@ void *TrainModelThread(void *id) {
             if (context == target || context == node_seq[a+w]) continue;
             label = 0;
           }
-//        printf("context %d mp_id=%d label=%d\n", context, mp_index, label);
 
           // training of a data
           lx = target * layer1_size;
@@ -579,22 +525,6 @@ void *TrainModelThread(void *id) {
           lr = mp_index * layer1_size;
           for (c = 0; c < layer1_size; c++) ex[c] = 0;
           for (c = 0; c < layer1_size; c++) er[c] = 0;
-
-//        printf("x:");
-//        for (c = 0; c < layer1_size; c++) {
-//          printf("%f ", syn0[c + lx]);
-//        }
-//        printf("\n");
-//        printf("y:");
-//        for (c = 0; c < layer1_size; c++) {
-//          printf("%f ", syn0[c + ly]);
-//        }
-//        printf("\n");
-//        printf("r:");
-//        for (c = 0; c < layer1_size; c++) {
-//          printf("%f ", synmp[c + lx]);
-//        }
-//        printf("\n");
 
           f = 0;
           for (c = 0; c < layer1_size; c++) {
@@ -609,7 +539,6 @@ void *TrainModelThread(void *id) {
           if (f > MAX_EXP) g = (label - 1) * alpha;
           else if (f < -MAX_EXP) g = (label - 0) * alpha;
           else g = (label - expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))]) * alpha;
-//        printf("dot=%f sigmoid=%f g=%f\n", f, expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))], g);
 
           // update
           for (c = 0; c < layer1_size; c++) {
@@ -627,11 +556,6 @@ void *TrainModelThread(void *id) {
             sigmoid = expTable[(int)((f + MAX_EXP) * (EXP_TABLE_SIZE / MAX_EXP / 2))];
             er[c] = g * syn0[c + lx] * syn0[c + ly] * sigmoid * (1-sigmoid);
           }
-//        printf("er:");
-//        for (c = 0; c < layer1_size; c++) {
-//          printf("%f ", er[c]);
-//        }
-//        printf("\n");
           for (c = 0; c < layer1_size; c++) {
             if (sigmoid_reg) {
               if (synmp[c + lr] > MAX_EXP) syn0[c + ly] += g * syn0[c + lx];
@@ -644,22 +568,6 @@ void *TrainModelThread(void *id) {
           for (c = 0; c < layer1_size; c++) syn0[c + lx] += ex[c];
 
           if (is_deepwalk == 0) {for (c = 0; c < layer1_size; c++) synmp[c + lr] += er[c];}
-//
-//        printf("update x:");
-//        for (c = 0; c < layer1_size; c++) {
-//          printf("%f ", syn0[c + lx]);
-//        }
-//        printf("\n");
-//        printf("update y:");
-//        for (c = 0; c < layer1_size; c++) {
-//          printf("%f ", syn0[c + ly]);
-//        }
-//        printf("\n");
-//        printf("update r:");
-//        for (c = 0; c < layer1_size; c++) {
-//          printf("%f ", synmp[c + lx]);
-//        }
-//        printf("\n");
         }
       }
     }
@@ -684,41 +592,12 @@ void TrainModel() {
   LearnMpVocabFromTrainFile();
   if (output_file[0] == 0) return;
   InitNet();
-//for (b = 0; b < layer1_size; b++) {
-//  for (a = 0; a < vocab_size; a++) {
-//    printf("%f ", syn0[a * layer1_size + b]);
-//  }
-//  printf("\n");
-//}
-//printf("\n");
-//for (b = 0; b < layer1_size; b++) {
-//  for (a = 0; a < mp_vocab_size; a++) {
-//    printf("%f ", synmp[a * layer1_size + b]);
-//  }
-//  printf("\n");
-//}
-//printf("\n");
 
   InitUnigramTable();
 
   start = clock();
   for (a = 0; a < num_threads; a++) pthread_create(&pt[a], NULL, TrainModelThread, (void *)a);
   for (a = 0; a < num_threads; a++) pthread_join(pt[a], NULL);
-
-//for (b = 0; b < layer1_size; b++) {
-//  for (a = 0; a < vocab_size; a++) {
-//    printf("%f ", syn0[a * layer1_size + b]);
-//  }
-//  printf("\n");
-//}
-//printf("\n");
-//for (b = 0; b < layer1_size; b++) {
-//  for (a = 0; a < mp_vocab_size; a++) {
-//    printf("%f ", synmp[a * layer1_size + b]);
-//  }
-//  printf("\n");
-//}
-//printf("\n");
 
   fo = fopen(output_file, "wb");
   if (fo == NULL) {
