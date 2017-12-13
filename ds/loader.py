@@ -37,7 +37,6 @@ def load_a_HIN_from_edge_file(fname):
 
         It is assumed that the HIN is directed
     '''
-    print 'loading a HIN...'
     g = network.HIN()
     with open(fname) as f:
         for line in f:

@@ -358,7 +358,7 @@ class HIN(object):
 
     def random_walks(self, count, length, weights=None,seed=None,stages=2):
         '''
-            to generate random walks starting from each node
+            Generate random walks starting from each node
 
             input:
                 count: the # of random walks starting from each node
