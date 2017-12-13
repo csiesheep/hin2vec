@@ -110,7 +110,7 @@ if __name__ == '__main__':
                       help=('Dimensionality of word embeddings '
                             '(default: 100)'))
     parser.add_option('-a', '--alpha', action='store', dest='alpha',
-                      default=0.005, type='float',
+                      default=0.025, type='float',
                       help='Starting learning rate (default: 0.025)')
     parser.add_option('-w', '--window', action='store', dest='window',
                       default=3, type='int',

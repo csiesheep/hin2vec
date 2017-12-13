@@ -31,7 +31,7 @@ struct vocab_mp{
 char train_file[MAX_STRING], output_file[MAX_STRING], mp_output_file[MAX_STRING];
 struct vocab_word *vocab;
 struct vocab_mp *mp_vocab;
-int binary = 0, debug_mode = 2, window = 5, num_threads = 1, min_reduce = 1, is_deepwalk = 0, no_circle = 1, static_win = 1;
+int binary = 0, debug_mode = 2, window = 3, num_threads = 1, is_deepwalk = 0, no_circle = 1, static_win = 1;
 int sigmoid_reg = 0;
 int *vocab_hash, *mp_vocab_hash;
 long long vocab_max_size = 1000, vocab_size = 0, layer1_size = 100;
@@ -296,8 +296,8 @@ void LearnVocabFromTrainFile() {
 //  printf("%d node:%s %lld\n", a, vocab[a].word, vocab[a].cn);
 //}
   if (debug_mode > 0) {
-    printf("Vocab size: %lld\n", vocab_size);
-    printf("Words in train file: %lld\n", train_words);
+    printf("Node size: %lld\n", vocab_size);
+    printf("Nodes in train file: %lld\n", train_words);
   }
   file_size = ftell(fin);
   fclose(fin);
@@ -364,11 +364,11 @@ void LearnMpVocabFromTrainFile() {
 
   SortMpVocab();
   for (a = 0; a < mp_vocab_size; a++) {
-    printf("%lld mp:%s %lld\n", a, mp_vocab[a].mp, mp_vocab[a].cn);
+    printf("%lld meta-path:%s %lld\n", a, mp_vocab[a].mp, mp_vocab[a].cn);
   }
   if (debug_mode > 0) {
-    printf("Mp Vocab size: %lld\n", mp_vocab_size);
-    printf("Mp in train file: %lld\n", train_mps);
+    printf("Meta-path size: %lld\n", mp_vocab_size);
+    printf("Meta-paths in train file: %lld\n", train_mps);
   }
   file_size = ftell(fin);
   fclose(fin);
@@ -653,20 +653,26 @@ int main(int argc, char **argv) {
     printf("HIN representation learning\n\n");
     printf("Options:\n");
     printf("Parameters for training:\n");
-    printf("\t-train <file>\n");
-    printf("\t\tUse text data from <file> to train the model\n");
-    printf("\t-output <file>\n");
-    printf("\t\tUse <file> to save the resulting node vectors\n");
     printf("\t-size <int>\n");
     printf("\t\tSet size of vectors; default is 100\n");
+    printf("\t-train <file>\n");
+    printf("\t\tUse text data from <file> to train the model\n");
+    printf("\t-alpha <float>\n");
+    printf("\t\tSet the starting learning rate; default is 0.025\n");
+    printf("\t-output <file>\n");
+    printf("\t\tUse <file> to save the resulting node vectors\n");
+    printf("\t-output_mp <file>\n");
+    printf("\t\tUse <file> to save the resulting meta-path vectors\n");
     printf("\t-window <int>\n");
     printf("\t\tSet max hop number of meta-paths between nodes; default is 3\n");
     printf("\t-negative <int>\n");
     printf("\t\tNumber of negative examples; default is 0, common values are 5 - 10 (0 = not used)\n");
     printf("\t-threads <int>\n");
     printf("\t\tUse <int> threads (default 1)\n");
-    printf("\t-alpha <float>\n");
-    printf("\t\tSet the starting learning rate; default is 0.025\n");
+    printf("\t-sigmoid_reg <1/0>\n");
+    printf("\t\tSet to use sigmoid function for regularization (default 0: use binary-step function)\n");
+    printf("\t-no_circle <1/0>\n");
+    printf("\t\tSet to agoid circles in paths when preparing training data (default 1: avoid)\n");
     printf("\nExamples:\n");
     printf("./hin2vec -train data.txt -output vec.txt -size 200 -window 5 -negative 5\n\n");
     return 0;
@@ -680,10 +686,10 @@ int main(int argc, char **argv) {
   if ((i = ArgPos((char *)"-window", argc, argv)) > 0) window = atoi(argv[i + 1]);
   if ((i = ArgPos((char *)"-negative", argc, argv)) > 0) negative = atoi(argv[i + 1]);
   if ((i = ArgPos((char *)"-threads", argc, argv)) > 0) num_threads = atoi(argv[i + 1]);
-  if ((i = ArgPos((char *)"-dw", argc, argv)) > 0) is_deepwalk = atoi(argv[i + 1]);
+//  if ((i = ArgPos((char *)"-dw", argc, argv)) > 0) is_deepwalk = atoi(argv[i + 1]);
   if ((i = ArgPos((char *)"-no_circle", argc, argv)) > 0) no_circle = atoi(argv[i + 1]);
   if ((i = ArgPos((char *)"-sigmoid_reg", argc, argv)) > 0) sigmoid_reg = atoi(argv[i + 1]);
-  if ((i = ArgPos((char *)"-static_win", argc, argv)) > 0) static_win = atoi(argv[i + 1]);
+//  if ((i = ArgPos((char *)"-static_win", argc, argv)) > 0) static_win = atoi(argv[i + 1]);
 
   vocab = (struct vocab_word *)calloc(vocab_max_size, sizeof(struct vocab_word));
   vocab_hash = (int *)calloc(vocab_hash_size, sizeof(int));
@@ -701,13 +707,9 @@ int main(int argc, char **argv) {
   }
 
   TrainModel();
-  printf("destroy net\n");
   DestroyNet();
-  printf("free vocab_hash\n");
   free(vocab_hash);
-  printf("free mp_vocab_hash\n");
   free(mp_vocab_hash);
-  printf("free exp_table\n");
   free(expTable);
   return 0;
 }
