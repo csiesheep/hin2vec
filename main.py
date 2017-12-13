@@ -118,13 +118,15 @@ if __name__ == '__main__':
     parser.add_option('-p', '--num_processes', action='store',
                       dest='num_processes', default=1, type='int',
                       help='Number of processes (default: 1)')
+#TODO
 #   parser.add_option('-i', '--iter', action='store', dest='iter',
 #                     default=1, type='int',
 #                     help='Training iterations (default: 1)')
-    parser.add_option('-s', '--same-matrix', action='store_true',
-                      dest='same_w', default=False,
-                      help=('Same matrix for nodes and context nodes '
-                            '(Default: False)'))
+#TODO
+#   parser.add_option('-s', '--same-matrix', action='store_true',
+#                     dest='same_w', default=False,
+#                     help=('Same matrix for nodes and context nodes '
+#                           '(Default: False)'))
     parser.add_option('-c', '--allow-circle', action='store_true',
                       dest='allow_circle', default=False,
                       help=('Set to all circles in relationships between '
