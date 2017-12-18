@@ -250,14 +250,18 @@ class HIN(object):
         '''
             ignore edge type
         '''
+        id2node = dict([(v, k) for k, v in self.node2id.items()])
         edges = []
         for node_id in self.graph:
             for edge_class_id, tos in self.graph[node_id].items():
                 for to_id, weight in tos.items():
                     if with_edge_class_id:
-                        edge = (node_id, to_id, weight, edge_class_id)
+                        edge = (id2node[node_id],
+                                id2node[to_id],
+                                weight,
+                                edge_class_id)
                     else:
-                        edge = (node_id, to_id, weight)
+                        edge = (id2node[node_id], id2node[to_id], weight)
                     edges.append(edge)
         return edges
 
