@@ -35,7 +35,7 @@ def load_node2vec(fname):
             node2vec[tokens[0]] = map(float, tokens[1:])
     return node2vec
 
-def load_node2classes(fname):
+def load_node2classes(fname, is_multiclass=True):
     node2classes = {}
     with open(fname) as f:
         for line in f:
@@ -43,8 +43,11 @@ def load_node2classes(fname):
                 continue
 
             node, classes = line.strip().split('\t')
-            classes = classes.split(',')
-            node2classes[node] = classes
+            classes = map(int, classes.split(','))
+            if is_multiclass:
+                node2classes[node] = classes
+            else:
+                node2classes[node] = classes[0]
     return node2classes
 
 def exp_classification(node2classes, node2vec, seed=None):
