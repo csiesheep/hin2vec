@@ -35,78 +35,17 @@ class RandomWalkTest(unittest.TestCase):
 
         self.g = g
 
-    def testRandomWalksWeightedEdgeClass2Stage(self):
-        weights = {
-            ('P-I', 'I-P'): 0.3,
-            ('P-P', '-P-P'): 0.1,
-            ('P-P', 'P-P'): 0.1,
-        }
-        actual = list(self.g.random_walks(2, 3,
-                                          weights=weights,
-                                          seed=1,
-                                          stages=2))
+    def testRandomWalks(self):
+        actual = list(self.g.random_walks(2, 3, seed=1))
         expected = [
-            [0, 0, 3, 0, 1],
-            [1, 0, 0, 0, 2],
-            [2, 1, 1, 0, 3],
-            [3, 0, 0, 1, 1],
-            [0, 0, 2, 0, 0],
+            [0, 0, 1, 2, 3],
+            [1, 0, 3, 0, 0],
+            [2, 0, 0, 0, 2],
+            [3, 0, 1, 0, 3],
+            [0, 0, 1, 0, 0],
             [1, 2, 3, 0, 0],
-            [2, 0, 0, 0, 1],
-            [3, 0, 0, 0, 1]
-        ]
-        self.assertEquals(expected, actual)
-
-    def testRandomWalksEqualWeightEdgeClass2Stage(self):
-        actual = list(self.g.random_walks(2, 3,
-                                          seed=1,
-                                          stages=2))
-        expected = [
-            [0, 0, 3, 0, 1],
-            [1, 0, 0, 1, 1],
-            [2, 0, 0, 2, 3],
-            [3, 0, 1, 0, 0],
-            [0, 2, 2, 0, 0],
-            [1, 1, 2, 1, 1],
             [2, 1, 1, 0, 0],
-            [3, 0, 0, 0, 1]
-        ]
-        self.assertEquals(expected, actual)
-
-    def testRandomWalksWeightedEdgeClass1Stage(self):
-        weights = {
-            ('P-I', 'I-P'): 0.3,
-            ('P-P', '-P-P'): 0.1,
-            ('P-P', 'P-P'): 0.1,
-        }
-        actual = list(self.g.random_walks(2, 3,
-                                          weights=weights,
-                                          seed=1,
-                                          stages=1))
-        expected = [
-            [0, 0, 1, 1, 2],
-            [1, 0, 3, 0, 0],
-            [2, 0, 0, 0, 1],
-            [3, 0, 1, 0, 3],
-            [0, 0, 1, 0, 0],
-            [1, 0, 3, 0, 0],
-            [2, 0, 0, 0, 1],
-            [3, 0, 0, 0, 2]
-        ]
-        self.assertEquals(expected, actual)
-
-    def testRandomWalksEqualWeightEdgeClass1Stage(self):
-        actual = list(self.g.random_walks(2, 3, seed=1, stages=1))
-        print actual
-        expected = [
-            [0, 0, 1, 1, 2],
-            [1, 0, 3, 0, 0],
-            [2, 0, 0, 0, 1],
-            [3, 0, 1, 0, 3],
-            [0, 0, 1, 0, 0],
-            [1, 0, 3, 0, 0],
-            [2, 1, 1, 1, 0],
-            [3, 0, 0, 2, 3]
+            [3, 0, 0, 0, 3]
         ]
         self.assertEquals(expected, actual)
 
@@ -125,21 +64,35 @@ class HINTest(unittest.TestCase):
         }
         expected.graph = {
             0: {
-                0: {1: 1, 2: 1},
-                1: {3: 1, 4: 1, 5: 1},
+                1: {0:1},
+                2: {0:1},
+                3: {1:1},
+                4: {1:1},
+                5: {1:1},
             },
             1: {
-                0: {2: 1},
-                2: {0: 1},
-                1: {3: 1, 4: 1},
+                0: {2:1},
+                2: {0:1},
+                3: {1:1},
+                4: {1:1},
             },
             2: {
-                2: {0: 1, 1: 1},
-                1: {5: 1},
+                0: {2:1},
+                1: {2:1},
+                5: {1:1},
             },
-            3 : {3: {0: 1, 1: 1}},
-            4 : {3: {0: 1, 1: 1}},
-            5 : {3: {0: 1, 2: 1}},
+            3 : {
+                0: {3:1},
+                1: {3:1},
+            },
+            4 : {
+                0: {3:1},
+                1: {3:1},
+            },
+            5 : {
+                0: {3:1},
+                2: {3:1},
+            },
         }
         expected.edge_class2id = {
             'P-P': 0,
@@ -425,12 +378,12 @@ class RandomRemoveEdge(unittest.TestCase):
         g.add_edge('C1', 'C', 'A2', 'A', 'C-A')
 
         expected_g = copy.deepcopy(g)
-        expected_g.graph[0][0].pop(3)
-        expected_g.graph[3][1].pop(0)
+        expected_g.graph[0].pop(3)
+        expected_g.graph[3].pop(0)
         expected_edges = [(0, 3)]
         actual = g.random_remove_edges('A-B', ratio=0.5, seed=1)
-        self.assertEquals(expected_g, g)
         self.assertEquals(expected_edges, actual)
+        self.assertEquals(expected_g, g)
 
 
 class RandomSelectNegEdges(unittest.TestCase):
@@ -474,30 +427,6 @@ class ToEdgeClassIdString(unittest.TestCase):
         expected = '0,1,2'
         actual = g.to_edge_class_id_string(edge_classes)
         self.assertEquals(expected, actual)
-
-
-class RandomAllEdges(unittest.TestCase):
-
-    def testSimple(self):
-        g = network.HIN()
-        g.add_edge('A1', 'A', 'B1', 'B', 'A-B')
-        g.add_edge('B1', 'B', 'A1', 'A', 'B-A')
-
-        g.add_edge('A1', 'A', 'B2', 'B', 'A-B')
-        g.add_edge('B2', 'B', 'A1', 'A', 'B-A')
-
-        g.add_edge('A1', 'A', 'B3', 'B', 'A-B')
-        g.add_edge('B3', 'B', 'A1', 'A', 'B-A')
-
-        g.add_edge('A2', 'A', 'C1', 'C', 'A-C')
-        g.add_edge('C1', 'C', 'A2', 'A', 'C-A')
-
-        expected = copy.deepcopy(g)
-        expected.graph[4] = {}
-        expected.graph.pop(5)
-        expected.class_nodes.pop('C')
-        g.remove_a_node_class('C')
-        self.assertEquals(expected, g)
 
 
 class GenerateTestSet(unittest.TestCase):

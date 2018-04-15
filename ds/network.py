@@ -15,7 +15,7 @@ class HIN(object):
         which support multigraph, weighted edges
     '''
     def __init__(self):
-        self.graph = {} #{from_id: {edge_class_id: {to_id: weight}}}
+        self.graph = {} #{from_id: {to_id: {edge_class_id: weight}}}
         #TODO correct the name
         self.class_nodes = {} #{node_class: set([node_id])}
         self.edge_class2id = {} #{edge_class: edge_class_id}
@@ -117,12 +117,12 @@ class HIN(object):
         self.class_nodes[to_class].add(to_id)
 
         if from_id not in self.graph:
-            self.graph[from_id] = {edge_id: {to_id: weight}}
+            self.graph[from_id] = {to_id: {edge_id: weight}}
             return
-        if edge_id not in self.graph[from_id]:
-            self.graph[from_id][edge_id] = {to_id: weight}
+        if to_id not in self.graph[from_id]:
+            self.graph[from_id][to_id] = {edge_id: weight}
             return
-        self.graph[from_id][edge_id][to_id] = weight
+        self.graph[from_id][to_id][edge_id] = weight
 
     def has_node(self, node):
         return node in self.node2id
@@ -184,15 +184,11 @@ class HIN(object):
         self.edge_class_id_available_node_class = {}
 
         graph = {}
-        for from_id, edge_tos in self.graph.items():
-            adict = {}
-            for tos in edge_tos.values():
-                for to_id, weight in tos.items():
-                    if to_id not in adict:
-                        adict[to_id] = weight
-                        continue
-                    adict[to_id] += weight
-            graph[from_id] = {0: adict}
+        for from_id, to_edges in self.graph.items():
+            graph[from_id] = {}
+            for to_id, edges in to_edges.items():
+                weight = sum(edges.values())
+                graph[from_id][to_id] = {0: weight}
         self.graph = graph
 
     #TODO speed up
@@ -203,8 +199,8 @@ class HIN(object):
         id2node = dict([(v, k) for k, v in self.node2id.items()])
         edges = []
         for node_id in self.graph:
-            for edge_class_id, tos in self.graph[node_id].items():
-                for to_id, weight in tos.items():
+            for to_id, to_edges in self.graph[node_id].items():
+                for edge_class_id, weight in to_edges.items():
                     if with_edge_class_id:
                         edge = (id2node[node_id],
                                 id2node[to_id],
@@ -241,99 +237,66 @@ class HIN(object):
     def get_ids(self):
         return sorted(self.node2id.values())
 
-    def random_walks(self, count, length, weights=None,seed=None,stages=2):
+    def a_random_walk(self, node, length):
+        if node not in self.graph:
+            return []
+        if not hasattr(self, 'node_choices'):
+            self.create_node_choices()
+
+        walk = [node]
+        length -= 1
+        while length > 0:
+            if len(self.graph[node]) == 0:
+                return walk
+
+            next_node, edge_class_id =random.choice(self.node_choices[node])
+
+            walk.append(edge_class_id)
+            walk.append(next_node)
+            node = next_node
+            length -= 1
+        return walk
+
+    def create_node_choices(self):
+        node_choices = {} #{from_id: [(to_id, edge_class_id)]} 
+        for from_id in self.graph:
+            node_choices[from_id] = []
+            for to_id in self.graph[from_id]:
+                for edge_id, w in self.graph[from_id][to_id].items():
+                    node_choices[from_id] += [(to_id, edge_id)] * int(w*10)
+        self.node_choices = node_choices
+
+    def random_walks(self, count, length, seed=None):
         '''
             Generate random walks starting from each node
 
             input:
                 count: the # of random walks starting from each node
                 length: the maximam length of a random walk
-                weights: the weights of edge_classes
-                stages: 1 or 2 stages
-                    2 stages: first select edge class, then select node
-                    1 stage: directly select node
 
             output:
                 [random_walk]
                     random_walk: [<node_id>,<edge_class_id>,<node_id>, ...]
         '''
-        def a_random_walk(node, length, stages):
-            walk = [node]
-            length -= 1
-            while length > 0:
-                if len(self.graph[node]) == 0:
-                    return walk
-
-                if len(self.graph[node]) == 1:
-                    edge_class_id = self.graph[node].iterkeys().next()
-
-                elif stages == 2:
-                    while True:
-                        edge_class_id = random.choice(edge_choices)
-                        if edge_class_id in self.graph[node]:
-                            break
-
-                elif stages == 1:
-                    edge_class_ids = []
-                    ps = []
-                    for edge_class, w in weights.items():
-                        edge_class_id = self.edge_class2id[edge_class]
-                        if edge_class_id in self.graph[node]:
-                            edge_class_ids.append(edge_class_id)
-                            ps.append(w*len(self.graph[node][edge_class_id]))
-                    sum_ = sum(ps)
-                    ps = [p/sum_ for p in ps]
-                    edge_class_id = np.random.choice(edge_class_ids, p=ps)
-
-                if len(node_choices[node][edge_class_id]) == 0:
-                    break
-
-                next_node =random.choice(node_choices[node][edge_class_id])
-                walk.append(edge_class_id)
-                walk.append(next_node)
-                node = next_node
-                length -= 1
-            return walk
 
         random.seed(seed)
         np.random.seed(seed)
 
-        if weights is None:
-            weights = dict(zip(self.edge_class2id.keys(),
-                               [1]*len(self.edge_class2id)))
-        sum_ = sum(weights.values())
-        weights = dict([(key, float(w)/sum_) for key,w in weights.items()])
+        if not hasattr(self, 'node_choices'):
+            self.create_node_choices()
 
-        edge_choices = []
-        for edge_class, w in weights.items():
-            edge_choices += [self.edge_class2id[edge_class]] * int(w*1000)
-
-        node_choices = {}
-        for node in self.graph:
-            node_choices[node] = {}
-            for edge in self.graph[node]:
-                node_choices[node][edge] = []
-                #FIXME weights may be continuous value
-                for neighbor_node,weight in self.graph[node][edge].items():
-                    node_choices[node][edge] += [neighbor_node] * weight
-
-        for _ in range(count):
+        for c in range(count):
+#           print c
+            n = 0
             for node in self.graph:
-                walk = a_random_walk(node, length, stages)
+                n += 1
+                if n % 10000 == 0:
+                    print n
+                walk = self.a_random_walk(node, length)
                 if len(walk) != 1:
                     yield walk
 
-#   def random_select_pairs_by_path(self, path, count):
-#       '''
-#           path: [edge_class_id]
-#       '''
-#       pairs = []
-#       while len(pairs) < count:
-#           for 
-
-#   def _check_path(self, from_id, to_id, path):
-#       pass
-
+    #FIXME
     def random_select_edges_by_classes(self, from_class, to_class, edge_class, count):
         edge_class_id = self.edge_class2id[edge_class]
         positives = []
@@ -383,18 +346,17 @@ class HIN(object):
             while len(to_visit) != 0:
                 visit_id = to_visit.pop()
                 visited.add(visit_id)
-                for to_ids in self.graph[visit_id].values():
-                    for to_id in to_ids:
-                        if to_id == id_:
-                            continue
-                        if to_id in neighbors:
-                            continue
-                        neighbors.add(to_id)
+                for to_id in self.graph[visit_id]:
+                    if to_id == id_:
+                        continue
+                    if to_id in neighbors:
+                        continue
+                    neighbors.add(to_id)
 
-                        if to_id in to_visit:
-                            continue
-                        if to_id not in visited:
-                            next_to_visit.add(to_id)
+                    if to_id in to_visit:
+                        continue
+                    if to_id not in visited:
+                        next_to_visit.add(to_id)
             to_visit = next_to_visit.copy()
             i += 1
         self.k_hop_neighbors[k][id_] = neighbors
@@ -414,16 +376,15 @@ class HIN(object):
         distance = 1
         while True:
             for id_ in to_visit:
-                for to_ids in self.graph[id_].values():
-                    for to_id in to_ids:
-                        if to_id == node_id2:
-                            return distance
+                for to_id in self.graph[id_]:
+                    if to_id == node_id2:
+                        return distance
 
-                        if to_id in visited or to_id in to_visit:
-                            continue
+                    if to_id in visited or to_id in to_visit:
+                        continue
 
-                        nexts.add(to_id)
-                        visited.add(id_)
+                    nexts.add(to_id)
+                    visited.add(id_)
 
             if max_ is not None and distance == max_:
                 return None
@@ -447,16 +408,20 @@ class HIN(object):
             inv_edge_class_id = edge_class_id
 
         edges = []
-        for from_id, edge_to_ids in self.graph.items():
-            if edge_class_id not in edge_to_ids:
-                continue
-            for to_id in edge_to_ids[edge_class_id].keys():
+        for from_id, tos in self.graph.items():
+            for to_id, to_edges in tos.items():
+                if edge_class_id not in to_edges:
+                    continue
                 edges.append((from_id, to_id))
         random.shuffle(edges)
         for from_id, to_id in edges[:int(len(edges)*ratio)]:
             try:
-                self.graph[from_id][edge_class_id].pop(to_id)
-                self.graph[to_id][inv_edge_class_id].pop(from_id)
+                self.graph[from_id][to_id].pop(edge_class_id)
+                if len(self.graph[from_id][to_id]) == 0:
+                    self.graph[from_id].pop(to_id)
+                self.graph[to_id][from_id].pop(inv_edge_class_id)
+                if len(self.graph[to_id][from_id]) == 0:
+                    self.graph[to_id].pop(from_id)
             except:
                 continue
         return edges[:int(len(edges)*ratio)]
@@ -475,8 +440,8 @@ class HIN(object):
             rand_to_id = to_ids[random.randint(0, to_id_size-1)]
             if (rand_from_id, rand_to_id) in selected:
                 continue
-            if (edge_class_id in self.graph[rand_from_id]
-                and rand_to_id in self.graph[rand_from_id][edge_class_id]):
+            if (rand_to_id in self.graph[rand_from_id]
+                and edge_class_id in self.graph[rand_from_id][rand_to_id]):
                 continue
             selected.add((rand_from_id, rand_to_id))
             if len(selected) % 10000 == 0:
@@ -485,22 +450,6 @@ class HIN(object):
 
     def to_edge_class_id_string(self, edge_classes):
         return ','.join(map(str, [self.edge_class2id[ec] for ec in edge_classes]))
-
-    def remove_a_node_class(self, node_class):
-        for node_id in self.class_nodes[node_class]:
-            self.graph.pop(node_id)
-        self.class_nodes.pop(node_class)
-        to_remove = set()
-        for edge_class_id, from_to in self.edge_class_id_available_node_class.items():
-            from_node_class, to_node_class = from_to
-            if to_node_class == node_class:
-                to_remove.add(edge_class_id)
-            if from_node_class == node_class:
-                to_remove.add(edge_class_id)
-        for edge_class_id in to_remove:
-            for node_id in self.graph:
-                if edge_class_id in self.graph[node_id]:
-                    self.graph[node_id].pop(edge_class_id)
 
     def generate_test_set(self, path, count, seed=None):
         random.seed(seed)
@@ -526,6 +475,8 @@ class HIN(object):
         for edge in path:
             next_ids = set()
             for from_id in from_ids:
-                next_ids.update(self.graph[from_id].get(edge, {}).keys())
+                for next_id in self.graph[from_id]:
+                    if edge in self.graph[from_id][next_id]:
+                        next_ids.add(next_id)
             from_ids = next_ids
         return to_id in from_ids
