@@ -1,7 +1,7 @@
 # HIN2Vec
 
 *HIN2Vec* learns distributed representations of nodes in heterogeneous information networks (HINs) by capturing the distiguishing metapath relationships between nodes. 
-Please refer the paper [here: ](https://dl.acm.org/citation.cfm?doid=3132847.3132953).
+Please refer the paper [here](https://dl.acm.org/citation.cfm?doid=3132847.3132953).
 
 ## How to use?
 
