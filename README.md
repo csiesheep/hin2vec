@@ -3,6 +3,13 @@
 *HIN2Vec* learns distributed representations of nodes in heterogeneous information networks (HINs) by capturing the distiguishing metapath relationships between nodes. 
 Please refer the paper [here](https://dl.acm.org/citation.cfm?doid=3132847.3132953).
 
+## Prepare
+
+### Compile the source code
+
+    cd model_c/src
+    make
+
 ## How to use?
 
 ### Example
@@ -21,7 +28,7 @@ See help for the other available options to use with *HIN2Vec*.<br/>
 
 The supported input format is an edgelist (separated by TAB):
 
-    node1_name node2_type node2_name, node2_type edge_type
+    node1_name node2_type node2_name node2_type edge_type
                     
 The input graph is assumed to be directed by default, which means that for an edge in a undirected graph, you need to add two directed edges. For example:
 
@@ -49,6 +56,11 @@ The metapath representation file has *k+1* lines for a graph with *k* targeted m
 
 where dim1, ... , dimd is the *d*-dimensional metapath representation learned by *HIN2Vec*. The number of target metapaths is related to the window size set for learning and the schema of the given graph.
 
+### Check the learned vectors
+
+Members in the Zachary's karate club network natually seperate into two groups. To treat the group classification for members as a binary classification:<br/>
+
+    python tools/exp_classification.py node_vectors.txt res/karate_club_groups.txt
 
 ## Citing
 
