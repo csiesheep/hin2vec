@@ -136,8 +136,16 @@ class HIN(object):
             edge_class_id = self.edge_class2id[edge_class]
             from_id = self.node2id[from_node]
             to_id = self.node2id[to_node]
-            if to_id in self.graph[from_id][edge_class_id]:
-                return True
+            #TODO graph form is {from_id: {to_id: {edge_class_id: weight}}} below mistake?
+            #ORIGINAL:
+            #if to_id in self.graph[from_id][edge_class_id]:
+            #    return True
+            #return False
+            #MODIFIED
+            if to_id in self.graph[from_id]:
+                if edge_class_id in self.graph[from_id][to_id]:
+                    return True
+                return False
             return False
         else:
             from_id = self.node2id[from_node]
