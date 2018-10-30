@@ -250,15 +250,23 @@ class HIN(object):
             return []
         if not hasattr(self, 'node_choices'):
             self.create_node_choices()
-
         walk = [node]
         length -= 1
         while length > 0:
+            # TODO fix mistake: next_node may be not in graph, callling graph[node] make error
+            # Original
+            '''
             if len(self.graph[node]) == 0:
                 return walk
-
+            '''
+            # Modified
+            #*******************
+            if node not in self.graph:
+                return walk
+            if len(self.graph[node]) == 0:
+                return walk
+            #*******************
             next_node, edge_class_id =random.choice(self.node_choices[node])
-
             walk.append(edge_class_id)
             walk.append(next_node)
             node = next_node
