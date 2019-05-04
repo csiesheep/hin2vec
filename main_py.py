@@ -88,6 +88,7 @@ def output_path2vec(g, tmp_path_vec_fname, path_vec_fname):
         with open(path_vec_fname, 'w') as fo:
             id2edge_class = dict([(v, k) for k, v
                                   in g.edge_class2id.items()])
+            print id2edge_class
             first = True
             for line in f:
                 if first:
@@ -96,7 +97,8 @@ def output_path2vec(g, tmp_path_vec_fname, path_vec_fname):
                     continue
 
                 ids, vectors = line.strip().split(' ', 1)
-                edge = ','.join([id2edge_class[int(id_)] for id_ in ids])
+                ids = map(int, ids.split(','))
+                edge = ','.join([id2edge_class[id_] for id_ in ids])
                 line = '%s %s\n' % (edge, vectors)
                 fo.write(line)
 
